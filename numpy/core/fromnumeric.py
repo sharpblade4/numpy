@@ -2238,6 +2238,20 @@ def sum(a, axis=None, dtype=None, out=None, keepdims=np._NoValue,
             return out
         return res
 
+    # Optimizing sum by matrix multiplication when applied along 
+    # one of the last two axes with integer dtype:
+    a_dims = len(a.shape)
+    if a.dtype.kind in 'uib':
+        if (axis is None and a_dims == 1) or axis in {-1, a_dims - 1}):
+            ones_vec = np.ones(a.shape[-1], dtype)
+            return np.matmul(a, ones_vec, out=out, dtype=dtype, keepdims=keepdims,
+                             initial=initial, where=where)
+        if axis in {-2, a_dims - 2}:
+            ones_vec = np.ones(a.shape[-2], dtype)
+            return np.matmul(ones_vec, a, out=out, dtype=dtype, keepdims=keepdims,
+                             initial=initial, where=where)
+
+    # Normal execution:
     return _wrapreduction(a, np.add, 'sum', axis, dtype, out, keepdims=keepdims,
                           initial=initial, where=where)
 
